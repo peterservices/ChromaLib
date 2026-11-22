@@ -36,7 +36,7 @@ class ChromaApp:
         """
         if self.started_event.is_set():
             raise InitializedError("The app has already been initialized.")
-        self._websocket = await websockets.connect(self.websocket_uri)
+        self._websocket = await websockets.connect(self.websocket_uri, ping_interval=10)
         await self._send({
             "title": self.config.title,
             "description": self.config.description,
@@ -291,7 +291,7 @@ class ChromaApp:
                             for column, column_v in enumerate(row_v):
                                 decimals[row][column] = column_v.BGR_decimal
                         decimal_colors[device] = decimals
-                    elif effect_changed and self.started_event.is_set():
+                    elif effect_changed:
                         decimal_colors[device] = None
                 self._state._effects_changed.clear() # Reset effects changed event
 
