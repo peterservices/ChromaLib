@@ -1,16 +1,17 @@
-# IMPORTS
 import asyncio
 import json
 import logging
 import threading
 import time
+from contextlib import suppress
 from copy import deepcopy
 from typing import Any, Self
 
 import websockets
 
-from configuration import AppConfiguration, DeviceType
-from models import Color, EffectMethod, State
+from configurations import AppConfiguration, DeviceType
+from effects import EffectMethod
+from models import Color, State, device_type_dict
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +25,9 @@ class ChromaApp:
         self.config = config
         self.started_event = threading.Event()
 
-        self._state: State = State()
+        self._state: State | None = None
         self._websocket: websockets.ClientConnection | None = None
-        self._effect_update_thread = threading.Thread(target=self._update_effects, daemon=True)
-        self._effect_update_thread.start()
+        self._effect_update_task: asyncio.Task | None = None
 
     async def start(self: Self) -> None:
         """
@@ -53,14 +53,28 @@ class ChromaApp:
             }) # Clear Chroma effects for all active devices
 
         self.started_event.set()
+        if self._state is None:
+            self._state = State()
+        if self._effect_update_task is None or self._effect_update_task.done():
+            self._effect_update_task = asyncio.create_task(self._update_effects())
         self._state._effects_changed = True
         logger.debug(f"Connected to the Razer Chroma SDK ({self.websocket_uri})")
 
-    async def stop(self: Self) -> None:
+    async def stop(self: Self, *, complete: bool = True) -> None:
         """
         Deinitialize the Razer Chroma App.
+
+        Args:
+            complete: Whether a complete shutdown should be performed. (Clear current effect state)
         """
         self.started_event.clear()
+        if complete:
+            if self._effect_update_task is not None:
+                self._effect_update_task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await self._effect_update_task
+                self._effect_update_task = None
+            self._state = None
         if self._websocket is not None:
             await self._websocket.close()
             self._websocket = None
@@ -72,7 +86,7 @@ class ChromaApp:
         Send data through the Razer Chroma SDK.
 
         Args:
-            try_reconnect: Whether a reconnection should be attempted if the websocket is closed unexpectedly.
+            try_reconnect: Whether a reconnection should be attempted if the websocket is unexpectedly closed.
 
         Returns:
             Whether the payload was sent successfully.
@@ -83,40 +97,25 @@ class ChromaApp:
                 return True
             except (ConnectionError, websockets.ConnectionClosed):
                 if try_reconnect and self.started_event.is_set():
-                    await self.stop()
+                    await self.stop(complete=False) # Don't clear current effects
                     await self.start()
                     return await self._send(payload, try_reconnect=False)
         return False
 
     async def _update_effects(self: Self) -> None:
         """
-        Update the devices' color with active effects, and update any effect animations.
+        Update the colors of devices with active effects, update any effect animations, and remove expired effects.
         """
         while True:
-            for device in self.config.supported_devices:
-                effects = self._state.effects[device]
-                match device:
-                    case DeviceType.KEYBOARD:
-                        device_color_columns = 24
-                        device_color_rows = 8
-                    case DeviceType.MOUSE:
-                        device_color_columns = 7
-                        device_color_rows = 9
-                    case DeviceType.MOUSEPAD:
-                        device_color_columns = 20
-                        device_color_rows = 1
-                    case DeviceType.HEADSET:
-                        device_color_columns = 5
-                        device_color_rows = 1
-                    case DeviceType.KEYPAD:
-                        device_color_columns = 5
-                        device_color_rows = 4
-                    case DeviceType.CHROMALINK:
-                        device_color_columns = 4
-                        device_color_rows = 1
+            await asyncio.sleep(1 / 30)
 
-                expiring_effects = []
-                with self._state._lock:
+            if self._state is not None:
+                decimal_colors: dict[DeviceType, list[list[int]] | None] = device_type_dict()
+                for device in self.config.supported_devices:
+                    effects = self._state.effects[device]
+                    expiring_effects = []
+                    effect_changed = False
+
                     for effect in effects:
                         if effect.update_rate is not None and time.time() - effect._last_update_time >= effect.update_rate:
                             if effect.expires_after_updates is not None:
@@ -126,17 +125,18 @@ class ChromaApp:
                                 effect.expires_after_updates -= 1
                             if effect.update is not None:
                                 effect.update(deepcopy(effect.colors))
-                                self._state._effects_changed = True
+                                effect_changed = True
                             effect._last_update_time = time.time()
                     for effect in expiring_effects:
                         self._state.remove_effect(effect)
-                        self._state._effects_changed = True
+                        effect_changed = True
 
-                    effect_changed = self._state._effects_changed
-                    if effect_changed:
-                        self._state._effects_changed = False
+                    effect_changed = effect_changed or self._state._effects_changed
 
                     if effect_changed and len(effects) > 0:
+                        device_color_columns = effects[0]._colors_columns
+                        device_color_rows = effects[0]._colors_rows
+
                         colors = [[Color() for _ in range(device_color_columns)] for _ in range(device_color_rows)]
                         for effect in effects:
                             match effect.method:
@@ -144,18 +144,18 @@ class ChromaApp:
                                     # Add everything
                                     for row, row_v in enumerate(effect.colors):
                                         for column, column_v in enumerate(row_v):
-                                            colors[row][column] = colors[row][column] + column_v
+                                            colors[row][column] += column_v
                                 case EffectMethod.ADD_NON_ZERO:
                                     # Add everything, except to values that are already zeros
                                     for row, row_v in enumerate(effect.colors):
                                         for column, column_v in enumerate(row_v):
                                             if colors[row][column].RGB_float != (0.0, 0.0, 0.0):
-                                                colors[row][column] = colors[row][column] + column_v
+                                                colors[row][column] += column_v
                                 case EffectMethod.SUBTRACT:
                                     # Subtract everything
                                     for row, row_v in enumerate(effect.colors):
                                         for column, column_v in enumerate(row_v):
-                                            colors[row][column] = colors[row][column] - column_v
+                                            colors[row][column] -= column_v
                                 case EffectMethod.FILL:
                                     # Fill everything
                                     colors = deepcopy(effect.colors)
@@ -175,23 +175,39 @@ class ChromaApp:
                                     # Multiply everything
                                     for row, row_v in enumerate(effect.colors):
                                         for column, column_v in enumerate(row_v):
-                                            colors[row][column] = colors[row][column] * column_v
+                                            colors[row][column] *= column_v
+                                case EffectMethod.DIVIDE:
+                                    # Divide everything
+                                    for row, row_v in enumerate(effect.colors):
+                                        for column, column_v in enumerate(row_v):
+                                            colors[row][column] /= column_v
                         # Convert the float colors to decimal colors usable by the Chroma SDK API
-                        decimal_colors = [[0 for _ in range(device_color_columns)] for _ in range(device_color_rows)]
+                        decimals = [[0 for _ in range(device_color_columns)] for _ in range(device_color_rows)]
                         for row, row_v in enumerate(colors):
                             for column, column_v in enumerate(row_v):
-                                decimal_colors[row][column] = column_v.BGR_decimal
+                                decimals[row][column] = column_v.BGR_decimal
+                        decimal_colors[device] = decimals
+                    elif effect_changed and self.started_event.is_set():
+                        decimal_colors[device] = None
+                self._state._effects_changed = False # Reset effects chanegd flag
 
-                        if self.started_event.is_set(): # Only send data if we are connected
-                            if device_color_rows == 1:
-                                decimal_colors = decimal_colors[0] # Devices that have one row don't accept 2D lists
+                if self.started_event.is_set(): # Only send data if we are connected
+                    for device, colors in decimal_colors.items():
+                        if colors is None:
+                            await self._send({
+                                "endpoint": device,
+                                "effect": "CHROMA_NONE"
+                            })
+                        else:
+                            if len(colors) == 1:
+                                colors = colors[0] # Devices that have one row don't accept 2D lists
                             match device:
                                 case DeviceType.KEYBOARD:
                                     await self._send({
                                         "endpoint": device,
                                         "effect": "CHROMA_CUSTOM2",
                                         "param": {
-                                           "color": decimal_colors,
+                                           "color": colors,
                                            "key": [[0 for _ in range(22)] for _ in range(6)] # Make key param all zeros because it's not needed
                                         }
                                     })
@@ -199,16 +215,11 @@ class ChromaApp:
                                     await self._send({
                                         "endpoint": device,
                                         "effect": "CHROMA_CUSTOM2",
-                                        "param": decimal_colors
+                                        "param": colors
                                     })
                                 case _:
                                     await self._send({
                                         "endpoint": device,
                                         "effect": "CHROMA_CUSTOM",
-                                        "param": decimal_colors
+                                        "param": colors
                                     })
-                    elif effect_changed and self.started_event.is_set(): # Only send data if we are connected
-                            await self._send({
-                                "endpoint": device,
-                                "effect": "CHROMA_NONE"
-                            })
