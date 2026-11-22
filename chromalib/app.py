@@ -54,6 +54,7 @@ class ChromaApp:
                 "endpoint": device,
                 "effect": "CHROMA_NONE"
             }, try_reconnect=False) # Clear Chroma effects for all active devices
+        await asyncio.sleep(1)
 
         if self._state is None:
             self._state = EffectState()
