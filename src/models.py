@@ -1,28 +1,36 @@
-# IMPORTS
-from collections.abc import Callable
-from enum import Enum
-from threading import Lock
 from typing import Any, Self
 
 from pydantic import (
     Field,
-    NonNegativeFloat,
-    NonNegativeInt,
-    PositiveFloat,
     PrivateAttr,
     field_validator,
-    model_validator,
 )
 
 from basemodel import ValidateBaseModel
-from configuration import DeviceType
+from configurations import DeviceType
+from effects import (
+    ChromaLinkEffect,
+    Effect,
+    HeadsetEffect,
+    KeyboardEffect,
+    KeypadEffect,
+    MouseEffect,
+    MousepadEffect,
+)
 
+
+def device_type_dict() -> dict[DeviceType, Any]:
+    """
+    Return a dict with keys for every `DeviceType` value.
+    """
+    return dict.fromkeys(list(DeviceType))
 
 class Color(ValidateBaseModel):
     """
     An RGB float color with added support for RGB integer and BGR decimal colors.
 
-    Please note that float color values are clamped between 0 and 1.
+    Supports addition, subtraction, multiplication, and division.
+    Please note that float color values are automatically clamped between 0 and 1.
     """
     red: float = 0.0
     green: float = 0.0
@@ -45,9 +53,6 @@ class Color(ValidateBaseModel):
             return Color(red=self.red * other.red, green=self.green * other.green, blue=self.blue * other.blue)
         except AttributeError:
             raise NotImplementedError from None
-
-    def __rmul__(self: Self, other: "Color") -> "Color":
-        return self.__mul__(other)
 
     def __truediv__(self: Self, other: "Color") -> "Color":
         try:
@@ -98,146 +103,6 @@ class Color(ValidateBaseModel):
     def validate_colors(cls, value: float) -> float:
         return max(0.0, min(value, 1.0)) # Clamp color values between 0 and 1
 
-class EffectMethod(Enum):
-    ADD = 1
-    ADD_NON_ZERO = 2
-    SUBTRACT = 3
-    MULTIPLY = 4
-    FILL = 5
-    FILL_NON_ZERO = 6
-    FILL_ZERO = 7
-
-class EffectDirection(Enum):
-    UP = 1
-    DOWN = 2
-    LEFT = 3
-    RIGHT = 4
-
-class Effect(ValidateBaseModel):
-    """
-    Base effect.
-    """
-    method: EffectMethod
-    colors: list[list[Color]]
-    update_rate: PositiveFloat | None = None
-    update: Callable[[list[list[Color]]], list[list[Color]]] | None = None
-    _last_update_time: NonNegativeFloat = 0
-    expires_after_updates: NonNegativeInt | None = None
-    id: str | None = None
-
-    @model_validator(mode="after")
-    def validate_update_fields(self: Self) -> Self:
-        if self.update_rate is None and self.update is not None:
-            raise ValueError("update_rate must be specified if update is specified.")
-        return self
-
-class KeyboardEffect(Effect):
-    """
-    Keyboard effect.
-
-    colors: 8 x 24 list
-    """
-    direction: EffectDirection | None = None
-
-    @field_validator("colors", mode="after")
-    @classmethod
-    def validate_colors_dimensions(cls, value: list[list[Color]]) -> list[list[Color]]:
-        if len(value) != 8:
-            raise ValueError(f"Expected outer list to have a length of 8, got {len(value)}")
-        for inner_list in value:
-            if len(inner_list) != 24:
-                raise ValueError(f"Expected inner list to have a length of 24, got {len(inner_list)}")
-
-        return value
-
-class MouseEffect(Effect):
-    """
-    Mouse effect.
-
-    colors: 9 x 7 list
-    """
-    @field_validator("colors", mode="after")
-    @classmethod
-    def validate_colors_dimensions(cls, value: list[list[Color]]) -> list[list[Color]]:
-        if len(value) != 1:
-            raise ValueError(f"Expected outer list to have a length of 9, got {len(value)}")
-        for inner_list in value:
-            if len(inner_list) != 1:
-                raise ValueError(f"Expected inner list to have a length of 7, got {len(inner_list)}")
-
-        return value
-
-class MousepadEffect(Effect):
-    """
-    Mousepad effect.
-
-    colors: 1 x 20 list
-    """
-    @field_validator("colors", mode="after")
-    @classmethod
-    def validate_colors_dimensions(cls, value: list[list[Color]]) -> list[list[Color]]:
-        if len(value) != 1:
-            raise ValueError(f"Expected outer list to have a length of 1, got {len(value)}")
-        for inner_list in value:
-            if len(inner_list) != 1:
-                raise ValueError(f"Expected inner list to have a length of 20, got {len(inner_list)}")
-
-        return value
-
-class HeadsetEffect(Effect):
-    """
-    Headset effect.
-
-    colors: 1 x 5 list
-    """
-    @field_validator("colors", mode="after")
-    @classmethod
-    def validate_colors_dimensions(cls, value: list[list[Color]]) -> list[list[Color]]:
-        if len(value) != 1:
-            raise ValueError(f"Expected outer list to have a length of 1, got {len(value)}")
-        for inner_list in value:
-            if len(inner_list) != 1:
-                raise ValueError(f"Expected inner list to have a length of 5, got {len(inner_list)}")
-
-        return value
-
-class KeypadEffect(Effect):
-    """
-    Keypad effect.
-
-    colors: 4 x 5 list
-    """
-    @field_validator("colors", mode="after")
-    @classmethod
-    def validate_colors_dimensions(cls, value: list[list[Color]]) -> list[list[Color]]:
-        if len(value) != 1:
-            raise ValueError(f"Expected outer list to have a length of 4, got {len(value)}")
-        for inner_list in value:
-            if len(inner_list) != 1:
-                raise ValueError(f"Expected inner list to have a length of 5, got {len(inner_list)}")
-
-        return value
-
-class ChromaLinkEffect(Effect):
-    """
-    Chroma Link effect.
-
-    colors: 1 x 5 list
-    """
-    @field_validator("colors", mode="after")
-    @classmethod
-    def validate_colors_dimensions(cls, value: list[list[Color]]) -> list[list[Color]]:
-        if len(value) != 1:
-            raise ValueError(f"Expected outer list to have a length of 1, got {len(value)}")
-        for inner_list in value:
-            if len(inner_list) != 1:
-                raise ValueError(f"Expected inner list to have a length of 5, got {len(inner_list)}")
-
-        return value
-
-def device_type_dict() -> dict[DeviceType, Any]:
-    return dict.fromkeys(list(DeviceType))
-
 class State(ValidateBaseModel):
     """
     A model to manage Chroma effects.
@@ -246,8 +111,6 @@ class State(ValidateBaseModel):
 
     # Lowest to highest
     effect_id_hierarchy: list[str] = Field(default_factory=list)
-
-    _lock: Lock = PrivateAttr(default_factory=Lock)
 
     _effects_changed: bool = PrivateAttr(default=False) # TODO: actually set this variable
 
@@ -281,6 +144,7 @@ class State(ValidateBaseModel):
         """
         effects, device = self.get_effects_list_from_effect_type(effect)
 
+        self._effects_changed = True
         if effect.id is not None and len(effects) > 0 and effect.id in self.effect_id_hierarchy:
             highest_available_index = 0
             for id in self.effect_id_hierarchy:
@@ -310,6 +174,7 @@ class State(ValidateBaseModel):
 
         if effect in effects:
             effects.remove(effect)
+            self._effects_changed = True
 
     def remove_effects_by_ids(self: Self, ids: list[str], devices: list[DeviceType]) -> None:
         """

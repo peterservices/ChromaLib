@@ -1,97 +1,120 @@
-# IMPORTS
-from copy import deepcopy
+from collections.abc import Callable
 from enum import Enum
+from typing import Self
 
+from pydantic import (
+    NonNegativeFloat,
+    NonNegativeInt,
+    PositiveFloat,
+    PositiveInt,
+    model_validator,
+)
+
+from basemodel import ValidateBaseModel
+from configurations import DeviceType
 from models import Color
 
 
-class WaveLineOrientation(Enum):
-    VERTICAL = 1
-    HORIZONTAL = 2
-
-class WaveMode(Enum):
-    ALTERNATING = 1
-    CLUSTER = 2
-
-def create_wave_colors(colors: list[Color], line_orientation: WaveLineOrientation, mode: WaveMode) -> list[list[Color]]:
+class EffectMethod(Enum):
     """
-    Create a matrix of colors to be used for a wave effect using the supplied colors.
-
-    Args:
-        colors: List of colors to be used to create the colors.
-        line_orientation:
-            `WaveMode.VERTICAL`: Max 24 colors.
-            `WaveModeHORIZONTAL`: Max 8 colors.
-        mode:
-            `WaveMode.ALTERNATING`: Colors repeat seperated. (Looks best when the number of colors is a factor of the number of colors.)
-            `WaveMode.CLUSTER`: Colors repeat clumped with themselves.
-
-    Returns:
-        The generated matrix of wave colors.
+    Method of combining with lower hierarchy effects.
     """
-    if len(colors) < 2:
-        raise ValueError(f"Expected `colors` to have a length no less than 2, got {len(colors)}")
-    if line_orientation == WaveLineOrientation.VERTICAL and len(colors) > 24:
-        raise ValueError(f"Expected `colors` to have a length no greater than 24, got {len(colors)}")
-    if line_orientation == WaveLineOrientation.HORIZONTAL and len(colors) > 8:
-        raise ValueError(f"Expected `colors` to have a length no greater than 8, got {len(colors)}")
+    ADD = 1
+    ADD_NON_ZERO = 2
+    SUBTRACT = 3
+    MULTIPLY = 4
+    DIVIDE = 5
+    FILL = 6
+    FILL_NON_ZERO = 7
+    FILL_ZERO = 8
 
-    match line_orientation:
-        case WaveLineOrientation.VERTICAL:
-            row_pattern = colors.copy()
-            color = 0
-            match mode:
-                case WaveMode.ALTERNATING:
-                    while len(row_pattern) < 24:
-                        row_pattern.append(colors[color].model_copy())
-                        color += 1
-                        if color >= len(colors):
-                            color = 0
-                case WaveMode.CLUSTER:
-                    while len(row_pattern) < 24:
-                        index = row_pattern.index(colors[color])
-                        row_pattern.insert(index, colors[color].model_copy())
-                        color += 1
-                        if color >= len(colors):
-                            color = 0
-            pattern = [deepcopy(row_pattern) for _ in range(8)] # Ensure every Color object in the pattern is unique
-        case WaveLineOrientation.HORIZONTAL:
-            column_pattern = colors.copy()
-            color = 0
-            match mode:
-                case WaveMode.ALTERNATING:
-                    while len(column_pattern) < 8:
-                        column_pattern.append(colors[color].model_copy())
-                        color += 1
-                        if color >= len(colors):
-                            color = 0
-                case WaveMode.CLUSTER:
-                    while len(column_pattern) < 8:
-                        index = column_pattern.index(colors[color].model_copy())
-                        column_pattern.insert(index, colors[color])
-                        color += 1
-                        if color >= len(colors):
-                            color = 0
-            pattern = [[color.model_copy() for _ in range(24)] for color in column_pattern] # Ensure every Color object in the pattern is unique
-    return pattern
-
-def create_explosion_effect(color: Color) -> list[list[Color]]:
+class Effect(ValidateBaseModel):
     """
-    Create a matrix of float colors to be used for an explosion effect using the supplied color in RGB format.
-
-    Args:
-        color: The RGB color to be used for the effect.
-
-    Returns:
-        The generated explosion effect.
+    BaseModel for effects.
     """
-    # Make a blank background
-    pattern = [[Color() for _ in range(24)] for _ in range(8)]
+    colors: list[list[Color]]
+    method: EffectMethod
+    expires_after_updates: NonNegativeInt | None = None
+    id: str | None = None
+    update: Callable[[list[list[Color]]], list[list[Color]]] | None = None
+    update_rate: PositiveFloat | None = None
 
-    # Create a 2x2 colored square in the center of the matrix
-    pattern[3][11] = color.model_copy()
-    pattern[3][12] = color.model_copy()
-    pattern[4][11] = color.model_copy()
-    pattern[4][12] = color.model_copy()
+    _colors_rows: PositiveInt
+    _colors_columns: PositiveInt
+    _device_type: DeviceType
+    _last_update_time: NonNegativeFloat = 0
 
-    return pattern
+    @model_validator(mode="after")
+    def validate_colors_dimensions(self: Self) -> Self:
+        if len(self.colors) != self._colors_rows:
+            raise ValueError(f"Expected outer list to have a length of {self._colors_rows}, got {len(self.colors)}")
+        for inner_list in self.colors:
+            if len(inner_list) != self._colors_columns:
+                raise ValueError(f"Expected inner lists to have a length of {self._colors_columns}, got {len(inner_list)}")
+        return self
+
+    @model_validator(mode="after")
+    def validate_update_fields(self: Self) -> Self:
+        if self.update_rate is None and self.update is not None:
+            raise ValueError("update_rate must be specified if update is specified.")
+        return self
+
+class KeyboardEffect(Effect):
+    """
+    Keyboard effect.
+
+    colors: 8 x 24 list
+    """
+    _colors_rows = 8
+    _colors_columns = 24
+    _device_type = DeviceType.KEYBOARD
+
+class MouseEffect(Effect):
+    """
+    Mouse effect.
+
+    colors: 9 x 7 list
+    """
+    _colors_rows = 9
+    _colors_columns = 7
+    _device_type = DeviceType.MOUSE
+
+class MousepadEffect(Effect):
+    """
+    Mousepad effect.
+
+    colors: 1 x 20 list
+    """
+    _colors_rows = 1
+    _colors_columns = 20
+    _device_type = DeviceType.MOUSEPAD
+
+class HeadsetEffect(Effect):
+    """
+    Headset effect.
+
+    colors: 1 x 5 list
+    """
+    _colors_rows = 1
+    _colors_columns = 5
+    _device_type = DeviceType.HEADSET
+
+class KeypadEffect(Effect):
+    """
+    Keypad effect.
+
+    colors: 4 x 5 list
+    """
+    _colors_rows = 4
+    _colors_columns = 5
+    _device_type = DeviceType.KEYPAD
+
+class ChromaLinkEffect(Effect):
+    """
+    Chroma Link effect.
+
+    colors: 1 x 5 list
+    """
+    _colors_rows = 1
+    _colors_columns = 5
+    _device_type = DeviceType.CHROMALINK
