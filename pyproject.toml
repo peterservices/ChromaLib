@@ -13,6 +13,14 @@ dev = [
     "pre-commit>=4.0.0,<5.0.0",
 ]
 
+[build-system]
+requires = ["uv_build>=0.13.9,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = "."
+module-name = "src"
+
 [tool.ruff.lint]
 extend-select = [
     "B",
