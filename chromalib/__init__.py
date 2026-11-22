@@ -1,14 +1,14 @@
 import logging
 
-from app import ChromaApp
-from colors import Color
-from configurations import (
+from .app import ChromaApp
+from .colors import Color
+from .configurations import (
     AppCategory,
     AppConfiguration,
     AuthorConfiguration,
     DeviceType,
 )
-from effects import (
+from .effects import (
     ChromaLinkEffect,
     EffectMethod,
     HeadsetEffect,

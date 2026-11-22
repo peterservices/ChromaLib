@@ -1,5 +1,5 @@
 [project]
-name = "Chroma-Python"
+name = "chromalib"
 license = "MIT"
 version = "0.1.0"
 requires-python = ">=3.11"
@@ -19,7 +19,7 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-root = "."
-module-name = "src"
+module-name = "chromalib"
 
 [tool.ruff.lint]
 extend-select = [
