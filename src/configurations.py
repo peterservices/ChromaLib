@@ -2,12 +2,12 @@ from enum import StrEnum
 
 from pydantic import Field
 
-from basemodel import ValidateBaseModel
+from .basemodel import ValidateBaseModel
 
 
-class AuthorConfiguration(ValidateBaseModel):
-    name: str
-    contact: str
+class AppCategory(StrEnum):
+    APPLICATION = "application"
+    GAME = "game"
 
 class DeviceType(StrEnum):
     KEYBOARD = "keyboard"
@@ -17,9 +17,9 @@ class DeviceType(StrEnum):
     KEYPAD = "keypad"
     CHROMALINK = "chromalink"
 
-class AppCategory(StrEnum):
-    APPLICATION = "application"
-    GAME = "game"
+class AuthorConfiguration(ValidateBaseModel):
+    name: str
+    contact: str
 
 class AppConfiguration(ValidateBaseModel):
     title: str

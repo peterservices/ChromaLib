@@ -2,7 +2,7 @@ from collections.abc import Callable
 from copy import deepcopy
 from enum import Enum
 
-from models import Color
+from .colors import Color
 
 
 class WaveDirection(Enum):
@@ -18,6 +18,27 @@ class WaveLineOrientation(Enum):
 class WaveMode(Enum):
     ALTERNATING = 1
     CLUSTER = 2
+
+def create_explosion_colors(color: Color) -> list[list[Color]]:
+    """
+    Create a matrix of float colors to be used for an explosion effect using the supplied color in RGB format.
+
+    Args:
+        color: The RGB color to be used for the effect.
+
+    Returns:
+        The generated explosion effect.
+    """
+    # Make a blank background
+    pattern = [[Color() for _ in range(24)] for _ in range(8)]
+
+    # Create a 2x2 colored square in the center of the matrix
+    pattern[3][11] = color.model_copy()
+    pattern[3][12] = color.model_copy()
+    pattern[4][11] = color.model_copy()
+    pattern[4][12] = color.model_copy()
+
+    return pattern
 
 def create_wave_colors(colors: list[Color], line_orientation: WaveLineOrientation, mode: WaveMode) -> list[list[Color]]:
     """
@@ -81,27 +102,6 @@ def create_wave_colors(colors: list[Color], line_orientation: WaveLineOrientatio
             pattern = [[color.model_copy() for _ in range(24)] for color in column_pattern] # Ensure every Color object in the pattern is unique
     return pattern
 
-def create_explosion_colors(color: Color) -> list[list[Color]]:
-    """
-    Create a matrix of float colors to be used for an explosion effect using the supplied color in RGB format.
-
-    Args:
-        color: The RGB color to be used for the effect.
-
-    Returns:
-        The generated explosion effect.
-    """
-    # Make a blank background
-    pattern = [[Color() for _ in range(24)] for _ in range(8)]
-
-    # Create a 2x2 colored square in the center of the matrix
-    pattern[3][11] = color.model_copy()
-    pattern[3][12] = color.model_copy()
-    pattern[4][11] = color.model_copy()
-    pattern[4][12] = color.model_copy()
-
-    return pattern
-
 def generate_decay_updater(decay: Color) -> Callable[[list[list[Color]]], list[list[Color]]]:
     """
     Return a function that decreases a Color's values by a Color `decay`.
@@ -112,32 +112,9 @@ def generate_decay_updater(decay: Color) -> Callable[[list[list[Color]]], list[l
             for color in row:
                 color.red -= decay.red
                 color.green -= decay.green
-                color.blue -= color.blue
+                color.blue -= decay.blue
         return colors
     return _decay
-
-def generate_wave_updater(WaveDirection: WaveDirection) -> Callable[[list[list[Color]]], list[list[Color]]]:
-    """
-    Return a function that updates a wave effect in an WaveDirection `WaveDirection`.
-    """
-    def _wave(colors: list[list[Color]]) -> list[list[Color]]:
-        match WaveDirection:
-            case WaveDirection.UP:
-                first = colors.pop(0)
-                colors.append(first)
-            case WaveDirection.RIGHT:
-                for _, v in enumerate(colors):
-                    last = v.pop()
-                    v.insert(0, last)
-            case WaveDirection.DOWN:
-                last = colors.pop()
-                colors.insert(0, last)
-            case WaveDirection.LEFT:
-                for _, v in enumerate(colors):
-                    first = v.pop(0)
-                    v.append(first)
-        return colors
-    return _wave
 
 def generate_explosion_updater() -> Callable[[list[list[Color]]], list[list[Color]]]:
     """
@@ -217,4 +194,27 @@ def generate_explosion_updater() -> Callable[[list[list[Color]]], list[list[Colo
                 colors[first][12] = explosion_color.model_copy()
         return colors
     return _explosion
+
+def generate_wave_updater(direction: WaveDirection) -> Callable[[list[list[Color]]], list[list[Color]]]:
+    """
+    Return a function that updates a wave effect in an direction `WaveDirection`.
+    """
+    def _wave(colors: list[list[Color]]) -> list[list[Color]]:
+        match direction:
+            case WaveDirection.UP:
+                first = colors.pop(0)
+                colors.append(first)
+            case WaveDirection.RIGHT:
+                for _, v in enumerate(colors):
+                    last = v.pop()
+                    v.insert(0, last)
+            case WaveDirection.DOWN:
+                last = colors.pop()
+                colors.insert(0, last)
+            case WaveDirection.LEFT:
+                for _, v in enumerate(colors):
+                    first = v.pop(0)
+                    v.append(first)
+        return colors
+    return _wave
 
