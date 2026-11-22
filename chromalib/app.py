@@ -19,8 +19,8 @@ class ChromaApp:
     """
     An application to control Razer Chroma enabled devices.
     """
-    websocket_uri = "ws://localhost:13337/razer/chromasdk"
     update_tolerance_seconds = 1 / 100 # (0.01s) How many seconds early effect updates can fire
+    websocket_uri = "ws://localhost:13337/razer/chromasdk"
 
     def __init__(self: Self, config: AppConfiguration) -> None:
         self.config = config
