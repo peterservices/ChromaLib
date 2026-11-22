@@ -1,7 +1,25 @@
 repos:
-- repo: https://github.com/astral-sh/ruff-pre-commit
-  # Ruff version.
-  rev: v0.17.6
-  hooks:
-    # Run the linter.
-    - id: ruff-check
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.17.6
+    hooks:
+      # Run the linter.
+      - id: ruff-check
+  
+  - repo: local
+    hooks:
+      - id: verify-version-tag
+        name: Verify the package version matches the git tag
+        language: system
+        pass_filenames: false
+        always_run: true
+        entry: >-
+          powershell -NoProfile -Command '
+          $tag = (git describe --tags --exact-match 2>$null);
+          if ($tag) {
+            $ver = (uv version --short);
+            if ($tag.TrimStart("v") -ne $ver) {
+              Write-Error "Tag ($tag) does not match uv version ($ver)";
+              exit 1
+            }
+          }'
