@@ -42,8 +42,8 @@ from chromalib import (
 )
 
 configuration = AppConfiguration(
-    title="Red Integration",
-    description="Sets all devices to red",
+    title="Red Keyboard Integration",
+    description="Sets the keyboard to red",
     author=AuthorConfiguration(
         name="YourName",
         contact="YourWebsite"
