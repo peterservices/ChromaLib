@@ -62,7 +62,7 @@ class ChromaApp:
             self._effect_update_task = asyncio.create_task(self._update_effects())
         self.started_event.set()
         self._state._effects_changed.set()
-        logger.debug("Connected to the Razer Chroma SDK (%s)", self.websocket_uri)
+        logger.info("Connected to the Razer Chroma SDK (%s)", self.websocket_uri)
 
     async def stop(self: Self, *, complete: bool = True) -> None:
         """
@@ -83,7 +83,7 @@ class ChromaApp:
             await self._websocket.close()
             self._websocket = None
 
-            logger.debug("Disconnected from the Razer Chroma SDK (%s)", self.websocket_uri)
+            logger.info("Disconnected from the Razer Chroma SDK (%s)", self.websocket_uri)
 
     def find_effects_by_id(self: Self, id: str, device: DeviceType) -> list[Effect]:
         """
