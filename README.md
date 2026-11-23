@@ -20,7 +20,73 @@ pip install git+https://github.com/peterservices/ChromaLib.git
 
 ## **Simple Example**
 
-coming soon
+<details>
+
+<summary>Example</summary>
+
+```python
+import asyncio
+
+from chromalib import (
+    AppCategory,
+    AppConfiguration,
+    AuthorConfiguration,
+    ChromaApp,
+    Color,
+    DeviceType,
+    EffectMethod,
+    KeyboardEffect,
+    create_explosion_colors,
+    generate_explosion_updater,
+)
+
+configuration = AppConfiguration(
+    title="Red Integration",
+    description="Sets all devices to red",
+    author=AuthorConfiguration(
+        name="YourName",
+        contact="YourWebsite"
+    ),
+    supported_devices=[
+        DeviceType.KEYBOARD
+    ],
+    category=AppCategory.APPLICATION,
+    effect_id_hierarchy=[
+        "background",
+        "foreground"
+    ] # Optional
+)
+
+app = ChromaApp(config=configuration)
+
+async def main():
+    await app.start()
+    colors = [[Color(blue=1)] * 24] * 8 # 24 columns x 8 rows (Yes this is not optimal, will be improved later)
+    app.add_effect(KeyboardEffect(
+        colors=colors,
+        method=EffectMethod.FILL,
+        id="background"
+    ))
+
+    await asyncio.sleep(0.5)
+
+    color = Color()
+    color.RGB_int = (255, 0, 0) # Another way to specify color values
+    app.add_effect(KeyboardEffect(
+        colors=create_explosion_colors(color),
+        method=EffectMethod.FILL_NON_ZERO,
+        update=generate_explosion_updater(),
+        update_rate_seconds=0.12,
+        expires_after_updates=15,
+        id="foreground"
+    ))
+
+    await asyncio.sleep(4)
+    await app.stop()
+asyncio.run(main())
+```
+
+</details>
 
 ## **Features**
 
@@ -33,4 +99,4 @@ coming soon
 All features are toggle-able via a JSON file generated when you first run the script.
 
 > [!IMPORTANT]
-> ChromaLib is not affiliated or endorsed in any way by Razer or any of their subsidaries
+> ChromaLib is not affiliated or endorsed in any way by Razer or any of its subsidaries
