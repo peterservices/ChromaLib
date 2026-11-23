@@ -1,7 +1,8 @@
 # ChromaLib
 
-[![Build](https://github.com/peterservices/ChromaLib/actions/workflows/build.yml/badge.svg)](https://github.com/peterservices/ChromaLib/actions/workflows/build.yml)
-[![Ruff](https://github.com/peterservices/ChromaLib/actions/workflows/ruff.yml/badge.svg)](https://github.com/peterservices/ChromaLib/actions/workflows/ruff.yml)
+[![license](https://img.shields.io/pypi/l/chromalib.svg)](https://pypi.python.org/pypi/chromalib)
+[![version](https://img.shields.io/pypi/v/chromalib.svg)](https://pypi.python.org/pypi/chromalib)
+[![pyversions](https://img.shields.io/pypi/pyversions/chromalib.svg)](https://pypi.python.org/pypi/chromalib)
 
 A typed library for Razer Chroma that supports effect layering, updates, and expiry while managing the connection with the Chroma SDK over a websocket, allowing you to focus on creating effects.
 
