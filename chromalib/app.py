@@ -229,9 +229,9 @@ class ChromaApp:
                                     effect.colors = effect.update(deepcopy(effect.colors))
                                     effect_changed = True
                                 effect._last_update_time = time.monotonic()
-                            else:
-                                effect_next_update = toleranced_update_rate - (time.monotonic() - effect._last_update_time)
-                                next_update_seconds = effect_next_update if next_update_seconds is None else min(next_update_seconds, effect_next_update)
+                            # Set how many seconds until an effect will update
+                            effect_next_update = toleranced_update_rate - (time.monotonic() - effect._last_update_time)
+                            next_update_seconds = effect_next_update if next_update_seconds is None else min(next_update_seconds, effect_next_update)
                     for effect in expiring_effects:
                         self.remove_effect(effect)
                         effect_changed = True
