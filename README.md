@@ -96,7 +96,5 @@ asyncio.run(main())
 * Fully typed with docstrings
 * Asynchronous background loop
 
-All features are toggle-able via a JSON file generated when you first run the script.
-
 > [!IMPORTANT]
 > ChromaLib is not affiliated or endorsed in any way by Razer or any of its subsidaries
