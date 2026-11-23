@@ -12,7 +12,7 @@ A typed library for Razer Chroma that supports effect layering, updates, and exp
 
 ## **Installing**
 
-**Python 3.11 to 3.14 is supported**
+**Python 3.11 to 3.15 is supported**
 
 ```
 pip install git+https://github.com/peterservices/ChromaLib.git
