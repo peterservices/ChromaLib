@@ -98,6 +98,6 @@ jobs:
         with:
           name: ${{ github.ref_name }}
           files: dist/*
-          body_path: release_notes.md
+          body_path: release_notes.txt
           fail_on_unmatched_files: true
           prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'a') || contains(github.ref_name, 'b') }}
