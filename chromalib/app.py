@@ -44,14 +44,14 @@ class ChromaApp:
                 "name": self.config.author.name,
                 "contact": self.config.author.contact
             },
-            "device_supported": self.config.supported_devices,
+            "device_supported": [device.endpoint for device in self.config.supported_devices],
             "category": self.config.category
         }, try_reconnect=False)
 
         await asyncio.sleep(2) # Give the Chroma SDK time to intialize the app before resetting device RGB
         for device in self.config.supported_devices:
             await self._send({
-                "endpoint": device,
+                "endpoint": device.endpoint,
                 "effect": "CHROMA_NONE"
             }, try_reconnect=False) # Clear Chroma effects for all active devices
         await asyncio.sleep(1)
@@ -239,8 +239,8 @@ class ChromaApp:
                     effect_changed = effect_changed or self._state._effects_changed.is_set()
 
                     if effect_changed and len(effects) > 0:
-                        device_color_columns = effects[0]._colors_columns
-                        device_color_rows = effects[0]._colors_rows
+                        device_color_columns = effects[0]._device_type.columns
+                        device_color_rows = effects[0]._device_type.rows
 
                         colors = [[Color() for _ in range(device_color_columns)] for _ in range(device_color_rows)]
                         for effect in effects:
@@ -300,7 +300,7 @@ class ChromaApp:
                     for device, colors in decimal_colors.items():
                         if colors is None:
                             await self._send({
-                                "endpoint": device,
+                                "endpoint": device.endpoint,
                                 "effect": "CHROMA_NONE"
                             })
                         else:
@@ -309,7 +309,7 @@ class ChromaApp:
                             match device:
                                 case DeviceType.KEYBOARD:
                                     await self._send({
-                                        "endpoint": device,
+                                        "endpoint": device.endpoint,
                                         "effect": "CHROMA_CUSTOM2",
                                         "param": {
                                            "color": colors,
@@ -318,13 +318,13 @@ class ChromaApp:
                                     })
                                 case DeviceType.MOUSE:
                                     await self._send({
-                                        "endpoint": device,
+                                        "endpoint": device.endpoint,
                                         "effect": "CHROMA_CUSTOM2",
                                         "param": colors
                                     })
                                 case _:
                                     await self._send({
-                                        "endpoint": device,
+                                        "endpoint": device.endpoint,
                                         "effect": "CHROMA_CUSTOM",
                                         "param": colors
                                     })

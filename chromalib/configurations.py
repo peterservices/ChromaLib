@@ -1,5 +1,6 @@
 from collections.abc import Sequence
-from enum import StrEnum
+from enum import Enum, StrEnum
+from typing import Self
 
 from pydantic import Field
 
@@ -10,13 +11,18 @@ class AppCategory(StrEnum):
     APPLICATION = "application"
     GAME = "game"
 
-class DeviceType(StrEnum):
-    KEYBOARD = "keyboard"
-    MOUSE = "mouse"
-    MOUSEPAD = "mousepad"
-    HEADSET = "headset"
-    KEYPAD = "keypad"
-    CHROMALINK = "chromalink"
+class DeviceType(Enum):
+    KEYBOARD = ("keyboard", 24, 8)
+    MOUSE = ("mouse", 7, 9)
+    MOUSEPAD = ("mousepad", 20, 1)
+    HEADSET = ("headset", 5, 1)
+    KEYPAD = ("keypad", 5, 4)
+    CHROMALINK = ("chromalink", 5, 1)
+
+    def __init__(self: Self, endpoint: str, columns: int, rows: int):
+        self.endpoint = endpoint
+        self.columns = columns
+        self.rows = rows
 
 class AuthorConfiguration(ValidateBaseModel):
     name: str = Field(max_length=64)

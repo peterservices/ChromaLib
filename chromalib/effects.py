@@ -8,7 +8,6 @@ from pydantic import (
     NonNegativeFloat,
     NonNegativeInt,
     PositiveFloat,
-    PositiveInt,
     PrivateAttr,
     model_validator,
 )
@@ -48,18 +47,16 @@ class Effect(ValidateBaseModel):
     update: Callable[[list[list[Color]]], list[list[Color]]] | None = None
     update_rate_seconds: PositiveFloat | None = None
 
-    _colors_rows: PositiveInt
-    _colors_columns: PositiveInt
     _device_type: DeviceType
     _last_update_time: NonNegativeFloat = 0
 
     @model_validator(mode="after")
     def validate_colors_dimensions(self: Self) -> Self:
-        if len(self.colors) != self._colors_rows:
-            raise ValueError(f"Expected outer list to have a length of {self._colors_rows}, got {len(self.colors)}")
+        if len(self.colors) != self._device_type.rows:
+            raise ValueError(f"Expected outer list to have a length of {self._device_type.rows}, got {len(self.colors)}")
         for inner_list in self.colors:
-            if len(inner_list) != self._colors_columns:
-                raise ValueError(f"Expected inner lists to have a length of {self._colors_columns}, got {len(inner_list)}")
+            if len(inner_list) != self._device_type.columns:
+                raise ValueError(f"Expected inner lists to have a length of {self._device_type.columns}, got {len(inner_list)}")
         return self
 
     @model_validator(mode="after")
@@ -74,8 +71,6 @@ class KeyboardEffect(Effect):
 
     colors: 8 x 24 list
     """
-    _colors_rows = 8
-    _colors_columns = 24
     _device_type = DeviceType.KEYBOARD
 
 class MouseEffect(Effect):
@@ -84,8 +79,6 @@ class MouseEffect(Effect):
 
     colors: 9 x 7 list
     """
-    _colors_rows = 9
-    _colors_columns = 7
     _device_type = DeviceType.MOUSE
 
 class MousepadEffect(Effect):
@@ -94,8 +87,6 @@ class MousepadEffect(Effect):
 
     colors: 1 x 20 list
     """
-    _colors_rows = 1
-    _colors_columns = 20
     _device_type = DeviceType.MOUSEPAD
 
 class HeadsetEffect(Effect):
@@ -104,8 +95,6 @@ class HeadsetEffect(Effect):
 
     colors: 1 x 5 list
     """
-    _colors_rows = 1
-    _colors_columns = 5
     _device_type = DeviceType.HEADSET
 
 class KeypadEffect(Effect):
@@ -114,8 +103,6 @@ class KeypadEffect(Effect):
 
     colors: 4 x 5 list
     """
-    _colors_rows = 4
-    _colors_columns = 5
     _device_type = DeviceType.KEYPAD
 
 class ChromaLinkEffect(Effect):
@@ -124,8 +111,6 @@ class ChromaLinkEffect(Effect):
 
     colors: 1 x 5 list
     """
-    _colors_rows = 1
-    _colors_columns = 5
     _device_type = DeviceType.CHROMALINK
 
 class EffectState(ValidateBaseModel):
