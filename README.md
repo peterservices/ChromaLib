@@ -4,12 +4,12 @@
 [![version](https://img.shields.io/pypi/v/chromalib.svg)](https://pypi.python.org/pypi/chromalib)
 [![pyversions](https://img.shields.io/pypi/pyversions/chromalib.svg)](https://pypi.python.org/pypi/chromalib)
 
-A typed library for Razer Chroma that supports effect layering, updates, and expiry while managing the connection with the Chroma SDK over a websocket, allowing you to focus on creating effects.
+A typed library for Razer Chroma that supports effect layering, updates, and expiry while managing the connection with the Chroma SDK over a websocket, allowing you to focus on designing effects.
 
 > [!NOTE]
-> This library is in alpha and there may be breaking API changes in minor versions!
+> ChromaLib is currently in alpha and there may be breaking API changes in minor versions!
 >
-> Currently, Windows is the only supported platform, but support for Linux and macOS will be looked into.
+> Currently, Windows is the only supported platform, but support for Linux and macOS will be explored.
 
 ## **Installing**
 
@@ -96,11 +96,12 @@ asyncio.run(main())
 
 ## **Features**
 
-* Supports all major device types
-* Supports custom effect update functions
-* Utilizes Pydantic models for easy type validation
-* Fully typed with docstrings
-* Asynchronous background loop
+- Supports all major Razer devices
+- Supports custom effect update functions
+- Utilizes Pydantic models for easy type validation
+- Fully typed with docstrings
+- Asynchronous background loop and functions
+  - You must only modify active effects from the same event loop
 
 > [!IMPORTANT]
 > ChromaLib is not affiliated or endorsed in any way by Razer or any of its subsidaries
