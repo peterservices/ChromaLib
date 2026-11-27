@@ -54,6 +54,20 @@ def create_explosion_colors(device: DeviceType, color: Color) -> list[list[Color
 
     return pattern
 
+def create_static_colors(device: DeviceType, color: Color) -> list[list[Color]]:
+    """
+    Create a matrix of the same color.
+
+    Args:
+        device: The device type the colors will be created for.
+
+        color: The static color.
+
+    Returns:
+        The generated matrix of static colors.
+    """
+    return [[color.model_copy() for _ in range(device.columns)] for _ in range(device.rows)]
+
 def create_wave_colors(device: DeviceType, colors: list[Color], line_orientation: WaveLineOrientation, mode: WaveMode) -> list[list[Color]]:
     """
     Create a matrix of colors to be used for a wave effect using the supplied colors.
