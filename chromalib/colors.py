@@ -1,3 +1,4 @@
+from colorsys import hsv_to_rgb, rgb_to_hsv
 from typing import Self
 
 from pydantic import field_validator
@@ -7,7 +8,7 @@ from .basemodel import ValidateBaseModel
 
 class Color(ValidateBaseModel):
     """
-    An RGB float color with added support for RGB integer and BGR decimal colors.
+    An RGB float color with added support for RGB integer, HSV float, and BGR decimal colors.
 
     Supports addition, subtraction, multiplication, and division.
     Please note that float color values are automatically clamped between 0 and 1.
@@ -53,6 +54,13 @@ class Color(ValidateBaseModel):
         return int_color[2] * 256 ** 2 + int_color[1] * 256 + int_color[0]
 
     @property
+    def HSV_float(self: Self) -> tuple[float, float, float]:
+        """
+        The color as HSV floats between 0 and 1.
+        """
+        return rgb_to_hsv(*self.RGB_float)
+
+    @property
     def RGB_float(self: Self) -> tuple[float, float, float]:
         """
         The color as RGB floats between 0 and 1.
@@ -69,6 +77,10 @@ class Color(ValidateBaseModel):
     @BGR_decimal.setter
     def BGR_decimal(self: Self, value: int) -> None:
         self.RGB_int = (value % 256, (value // 256) % 256, (value // 256 ** 2) % 256)
+
+    @HSV_float.setter
+    def HSV_float(self: Self, values: tuple[float, float, float]) -> None:
+        self.RGB_float = hsv_to_rgb(*values)
 
     @RGB_float.setter
     def RGB_float(self: Self, values: tuple[float, float, float]) -> None:
