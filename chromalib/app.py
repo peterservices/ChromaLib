@@ -226,8 +226,14 @@ class ChromaApp:
                                         continue
                                     effect.expires_after_updates -= 1
                                 if effect.update is not None:
-                                    effect.colors = effect.update(deepcopy(effect.colors))
-                                    effect_changed = True
+                                    # Run an update on the effect without crashing the app if an exception is raised
+                                    try:
+                                        _colors = effect.update(deepcopy(effect.colors))
+                                    except Exception:
+                                        logger.exception("An exception was raised while updating an effect with id: %s", effect.id)
+                                    else:
+                                        effect.colors = _colors
+                                        effect_changed = True
                                 effect._last_update_time = time.monotonic()
                             # Set how many seconds until an effect will update
                             effect_next_update = toleranced_update_rate - (time.monotonic() - effect._last_update_time)
