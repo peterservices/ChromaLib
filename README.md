@@ -38,12 +38,13 @@ from chromalib import (
     EffectMethod,
     KeyboardEffect,
     create_explosion_colors,
+    create_static_colors,
     generate_explosion_updater,
 )
 
 configuration = AppConfiguration(
-    title="Red Keyboard Integration",
-    description="Sets the keyboard to red",
+    title="Red Integration",
+    description="Keybopard effects on a red background",
     author=AuthorConfiguration(
         name="YourName",
         contact="YourWebsite"
@@ -52,19 +53,22 @@ configuration = AppConfiguration(
         DeviceType.KEYBOARD
     ],
     category=AppCategory.APPLICATION,
+
+    # Optional
     effect_id_hierarchy=[
         "background",
         "foreground"
-    ] # Optional
+    ]
 )
 
 app = ChromaApp(config=configuration)
 
 async def main():
     await app.start()
-    colors = [[Color(blue=1)] * 24] * 8 # 24 columns x 8 rows (Yes this is not optimal, will be improved later)
+
+    color = Color(blue=1) # One way to specify color values
     app.add_effect(KeyboardEffect(
-        colors=colors,
+        colors=create_static_colors(DeviceType.KEYBOARD, color),
         method=EffectMethod.FILL,
         id="background"
     ))
@@ -74,7 +78,7 @@ async def main():
     color = Color()
     color.RGB_int = (255, 0, 0) # Another way to specify color values
     app.add_effect(KeyboardEffect(
-        colors=create_explosion_colors(color),
+        colors=create_explosion_colors(DeviceType.KEYBOARD, color),
         method=EffectMethod.FILL_NON_ZERO,
         update=generate_explosion_updater(),
         update_rate_seconds=0.12,
@@ -84,6 +88,7 @@ async def main():
 
     await asyncio.sleep(4)
     await app.stop()
+
 asyncio.run(main())
 ```
 
