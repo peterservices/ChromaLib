@@ -2,7 +2,7 @@
 name = "chromalib"
 license = "MIT"
 license-files = ["LICENSE"]
-version = "0.1.0"
+version = "0.2.0"
 description = "Python open-source library to create color effects for Razer Chroma devices with effect layering, updates, and expiry."
 readme = "README.md"
 authors = [
