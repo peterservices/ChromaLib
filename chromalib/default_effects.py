@@ -1,9 +1,7 @@
 import math
-from cmath import sin
 from collections.abc import Callable
 from copy import deepcopy
 from enum import Enum
-from math import cos
 
 from .colors import Color
 from .configurations import DeviceType
@@ -160,8 +158,8 @@ def generate_breathing_updater(original_color: Color, cycle_steps: int) -> Calla
     minimum_v = 0.2 * original_v
 
     # Calculate the Saturation and Value for each step (Shifted 0.001 rad left to try to ensure unique values)
-    v_steps = tuple([abs((original_v - minimum_v) * cos(x / cycle_steps * math.pi - 0.001)) + minimum_v for x in range(cycle_steps + 1)])
-    s_steps = tuple([abs((maximum_s - original_s) * sin(x / cycle_steps * math.pi - 0.001)) + original_s for x in range(cycle_steps + 1)])
+    v_steps = tuple([abs((original_v - minimum_v) * math.cos(x / cycle_steps * math.pi - 0.001)) + minimum_v for x in range(cycle_steps + 1)])
+    s_steps = tuple([abs((maximum_s - original_s) * math.sin(x / cycle_steps * math.pi - 0.001)) + original_s for x in range(cycle_steps + 1)])
 
     print(original_color.HSV_float)
     print(len(v_steps))
