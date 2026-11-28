@@ -161,8 +161,6 @@ def generate_breathing_updater(original_color: Color, cycle_steps: int) -> Calla
     v_steps = tuple([abs((original_v - minimum_v) * math.cos(x / cycle_steps * math.pi - 0.001)) + minimum_v for x in range(cycle_steps + 1)])
     s_steps = tuple([abs((maximum_s - original_s) * math.sin(x / cycle_steps * math.pi - 0.001)) + original_s for x in range(cycle_steps + 1)])
 
-    print(original_color.HSV_float)
-    print(len(v_steps))
     def _breathe(colors: list[list[Color]]) -> list[list[Color]]:
         # Find the current step by comparing the Saturation and Value steps against the top left color
         step_index = 0
