@@ -1,6 +1,9 @@
+import math
+from cmath import sin
 from collections.abc import Callable
 from copy import deepcopy
 from enum import Enum
+from math import cos
 
 from .colors import Color
 from .configurations import DeviceType
@@ -137,6 +140,45 @@ def create_wave_colors(device: DeviceType, colors: list[Color], line_orientation
                             color = 0
             pattern = [[color.model_copy() for _ in range(columns)] for color in column_pattern] # Ensure every Color object in the pattern is unique
     return pattern
+
+def generate_breathing_updater(original_color: Color, cycle_steps: int) -> Callable[[list[list[Color]]], list[list[Color]]]:
+    """
+    Return a function that updates the Saturation and Value of an effect's colors to mimic a breathing effect.
+
+    The effect's colors should all be the same as original_color, like generated with `create_static_colors`.
+
+    Args:
+        original_color: The `Color` to make Saturation and Value calculations from.
+
+        cycle_steps: How many steps complete a full cycle from original color to original color.
+
+    Returns:
+        The generated function.
+    """
+    _, original_s, original_v = original_color.HSV_float
+    maximum_s = min(1.0, 1.1 * original_s)
+    minimum_v = 0.2 * original_v
+
+    # Calculate the Saturation and Value for each step (Shifted 0.001 rad left to try to ensure unique values)
+    v_steps = tuple([abs((original_v - minimum_v) * cos(x / cycle_steps * math.pi - 0.001)) + minimum_v for x in range(cycle_steps + 1)])
+    s_steps = tuple([abs((maximum_s - original_s) * sin(x / cycle_steps * math.pi - 0.001)) + original_s for x in range(cycle_steps + 1)])
+
+    print(original_color.HSV_float)
+    print(len(v_steps))
+    def _breathe(colors: list[list[Color]]) -> list[list[Color]]:
+        # Find the current step by comparing the Saturation and Value steps against the top left color
+        step_index = 0
+        for i in range(cycle_steps + 1):
+            if math.isclose(colors[0][0].HSV_float[2], v_steps[i]) and math.isclose(colors[0][0].HSV_float[1], s_steps[i]):
+                step_index = i + 1
+                break
+
+        # Set all the colors' Saturation and Value
+        for row in colors:
+            for color in row:
+                color.HSV_float = (color.HSV_float[0], s_steps[step_index], v_steps[step_index])
+        return colors
+    return _breathe
 
 def generate_decay_updater(decay: Color) -> Callable[[list[list[Color]]], list[list[Color]]]:
     """
