@@ -140,7 +140,13 @@ def create_wave_colors(device: DeviceType, colors: list[Color], line_orientation
 
 def generate_decay_updater(decay: Color) -> Callable[[list[list[Color]]], list[list[Color]]]:
     """
-    Return a function that decreases an effect's colors' values by a Color `decay`.
+    Return a function that decreases an effect's colors' values by a decay `Color`.
+
+    Args:
+        decay: The `Color` to decay other colors by each update.
+
+    Returns:
+        The generated function.
     """
     decay = decay.model_copy()
     def _decay(colors: list[list[Color]]) -> list[list[Color]]:
@@ -155,6 +161,9 @@ def generate_decay_updater(decay: Color) -> Callable[[list[list[Color]]], list[l
 def generate_explosion_updater() -> Callable[[list[list[Color]]], list[list[Color]]]:
     """
     Return a function that updates an explosion effect's colors.
+
+    Returns:
+        The generated function.
     """
     def _explosion(colors: list[list[Color]]) -> list[list[Color]]:
         columns = len(colors[0])
@@ -216,7 +225,13 @@ def generate_explosion_updater() -> Callable[[list[list[Color]]], list[list[Colo
 
 def generate_wave_updater(direction: WaveDirection) -> Callable[[list[list[Color]]], list[list[Color]]]:
     """
-    Return a function that updates a wave effect in an direction `WaveDirection`.
+    Return a function that updates a wave effect in a direction `WaveDirection`.
+
+    Args:
+        direction: The `WaveDirection` to move the wave in.
+
+    Returns:
+        The generated function.
     """
     def _wave(colors: list[list[Color]]) -> list[list[Color]]:
         match direction:
